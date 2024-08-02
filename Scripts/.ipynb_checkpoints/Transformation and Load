@@ -1,0 +1,60 @@
+#install the necessary packages 
+#!pip install azure-storage-blob # Microoft Azure
+#!pip install pyarrow
+#!pip install psycopg2 sqlalchemy
+#!pip install pyodbc
+
+import pandas as pd
+import numpy as np
+import json
+import requests
+from io import StringIO
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
+from math import ceil
+import datetime
+import calendar
+from sqlalchemy import create_engine
+import pyodbc
+
+
+#Azure functions
+def azure_upload_blob(connect_str, container_name, blob_name, data):
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    blob_client.upload_blob(data, overwrite=True)
+    print(f"Uploaded to Azure Blob: {blob_name}")
+
+def azure_download_blob(connect_str, container_name, blob_name):
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob_name)
+    download_stream = blob_client.download_blob()
+    return download_stream.readall()
+
+
+#Loading connection string for authentication
+with open('config.json', 'r') as config_file:
+    config = json.load(config_file)
+
+
+# Retrieve the connection string from the config
+CONNECTION_STRING_AZURE_STORAGE = config["connectionString"]
+CONTAINER_AZURE = "airqualityhw12"
+
+# Initialize the BlobServiceClient and getting the container
+blob_service_client = BlobServiceClient.from_connection_string(CONNECTION_STRING_AZURE_STORAGE)
+container_client = blob_service_client.get_container_client(CONTAINER_AZURE)
+
+# Function to read blob data and return DataFrame
+def read_blob_as_dataframe(blob_name):
+    blob_client = container_client.get_blob_client(blob=blob_name)
+    blob_data = blob_client.download_blob()
+    blob_content = blob_data.readall().decode('utf-8')
+    return pd.read_csv(StringIO(blob_content))
+
+# List all blobs in the specified container
+blob_list = container_client.list_blobs()
+for blob in blob_list:
+    print("Blob name:", blob.name)
+    df = read_blob_as_dataframe(blob.name)
+    print(df.shape)
+    airquality_data = df.copy()
