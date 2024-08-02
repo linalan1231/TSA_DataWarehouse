@@ -1,0 +1,55 @@
+from PyPDF2 import PdfReader
+from nltk import word_tokenize
+import re
+from geopy.geocoders import Nominatim
+import time 
+# source:https://geopy.readthedocs.io/en/stable/
+
+reader = PdfReader("/Users/alanlin/Desktop/Project /Data/August-6-2023-to-august-12-2023_0.pdf")
+
+#creating an function to extract data from PDF
+def extractfunc(reader):
+    extracted_text = ""
+    for page in reader.pages:
+        extracted_text += page.extract_text()  
+    word = word_tokenize(extracted_text)
+    
+    return word
+
+file = extractfunc(reader) # running the function 
+
+#looking for 3 letter characters 
+airport_code = [w for w in set(file) if re.search(r'([A-Z]{3})',w) and w.isalpha() and len(w) ==3]
+
+#looking for 2 letter characters
+state = [w for w in set(file) if re.search(r'([A-Z]{2})',w) and w.isalpha() and len(w) ==2]
+
+
+#creating an function to get the Geo location of the airport by Long and Lat
+def coordinatelocator(airport_code):
+    geolocator = Nominatim(user_agent="your_application_name")
+    for i in airport_code:
+        try:
+            location = geolocator.geocode(f"{i} Airport")
+            if location:
+                print((i, location.latitude, location.longitude))
+            else:
+                print(f"Coordinates for {i} Airport not found")
+        except Exception as e:
+            print(f"Error: {e}")
+
+
+count = 0
+airport_code_list = []
+
+for i in range(len(airport_code)):
+    count += 1
+    if count% 5  ==0:
+        time.sleep(10)
+    airport_coordinates = coordinatelocator([airport_code[i]])
+    airport_code_list.append(airport_coordinates)
+
+print(airport_code_list)
+
+
+
