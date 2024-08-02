@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="TSA-weather-dw-lgl-v1" id="PostgreSQL-2213" database="PostgreSQL" >
+	<comment><![CDATA[First attempt at Dimensional Modeling for the Group Project]]></comment>
+	<schema name="instance" catalogname="TSA-weather-dw-lgl-v1" >
+		<table name="dimension-location" prior="Dimension-Location" >
+			<column name="location_id" prior="Location_ID" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="city" prior="City" type="VARCHAR" length="255" jt="12" />
+			<column name="state" prior="State" type="VARCHAR" length="255" jt="12" />
+			<column name="latitude" prior="Latitude" type="DOUBLE" jt="8" />
+			<column name="longitude" prior="Longitude" type="DOUBLE" jt="8" />
+			<column name="zipcode" prior="Zipcode" type="VARCHAR" length="55" jt="12" />
+			<index name="pk_dimension-location" unique="PRIMARY_KEY" >
+				<column name="location_id" />
+			</index>
+		</table>
+		<table name="dimension_airport" prior="Dimension_Airport" >
+			<column name="airport_id" prior="Airport_ID" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="airport_code" prior="Airport_code" type="VARCHAR" length="5" jt="12" />
+			<column name="airport_longitude" prior="Airport_Longitude" type="DOUBLE" jt="8" />
+			<column name="airport_latitude" prior="Airport_Latitude" type="DOUBLE" jt="8" />
+			<column name="aiport_checkpoints" prior="Aiport_Checkpoints" type="INT" jt="4" />
+			<index name="pk_dimension_airport" unique="PRIMARY_KEY" >
+				<column name="airport_id" />
+			</index>
+		</table>
+		<table name="dimension_date" prior="Dimension_date" >
+			<column name="date_id" prior="Date_ID" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="dateoriginalformat" prior="DateOriginalFormat" type="DATE" jt="91" />
+			<column name="dateisoformat" prior="Dateisoformat" type="DATE" jt="91" />
+			<column name="year_number" prior="Year_number" type="INT" jt="4" />
+			<column name="quarter_number" prior="Quarter_number" type="INT" jt="4" />
+			<column name="month_number" prior="Month_number" type="INT" jt="4" />
+			<column name="day_number" prior="Day_number" type="INT" jt="4" />
+			<column name="hour_number" prior="Hour_number" type="INT" jt="4" />
+			<column name="monthname" prior="MonthName" type="VARCHAR" length="255" jt="12" />
+			<column name="dayname" prior="DayName" type="VARCHAR" length="255" jt="12" />
+			<column name="weekoftheyear" prior="WeekofTheYear" type="INT" jt="4" />
+			<column name="weekofthemonth" prior="WeekoftheMonth" type="INT" jt="4" />
+			<index name="pk_dimension_date" unique="PRIMARY_KEY" >
+				<column name="date_id" />
+			</index>
+		</table>
+		<table name="tsa-weather-facts" >
+			<column name="fact_id" prior="Fact_ID" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="throughput_(pax)" prior="Throughput_(pax)" type="INT" jt="4" />
+			<column name="hourly_temp_(f)" prior="hourly_temp_(F)" type="DOUBLE" jt="8" />
+			<column name="hourly_relative_humidity_2m" type="DOUBLE" jt="8" />
+			<column name="wind_speed_100m" type="DOUBLE" jt="8" />
+			<column name="hourly_precipitation" type="DOUBLE" jt="8" />
+			<column name="location_id_(fk)" prior="Location_ID_(fk)" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="date_id_(fk)" prior="date_ID_(fk)" type="BIGINT" jt="-5" mandatory="y" />
+			<column name="airport_id_(fk)" prior="airport_ID_(fk)" type="BIGINT" jt="-5" mandatory="y" />
+			<index name="pk_tsa-weather-facts" unique="PRIMARY_KEY" >
+				<column name="fact_id" />
+			</index>
+			<index name="unq_locationid" unique="UNIQUE_INDEX" >
+				<column name="location_id_(fk)" />
+			</index>
+			<fk name="fk_tsa-weather-facts_dimension-location" virtual="y" to_schema="TSA-weather-dw-lgl-v1.instance" to_table="dimension-location" >
+				<fk_column name="location_id_(fk)" pk="location_id" />
+			</fk>
+			<fk name="fk_tsa-weather-facts_dimension_airport" virtual="y" to_schema="TSA-weather-dw-lgl-v1.instance" to_table="dimension_airport" >
+				<fk_column name="airport_id_(fk)" pk="airport_id" />
+			</fk>
+			<fk name="fk_tsa-weather-facts_dimension_date" virtual="y" to_schema="TSA-weather-dw-lgl-v1.instance" to_table="dimension_date" >
+				<fk_column name="date_id_(fk)" pk="date_id" />
+			</fk>
+		</table>
+	</schema>
+	<layout name="Default Layout" id="Layout-114f" confirmed="y" show_relation="columns" >
+		<entity schema="TSA-weather-dw-lgl-v1.instance" name="dimension-location" color="C1D8EE" x="48" y="80" />
+		<entity schema="TSA-weather-dw-lgl-v1.instance" name="dimension_airport" color="C1D8EE" x="288" y="336" />
+		<entity schema="TSA-weather-dw-lgl-v1.instance" name="dimension_date" color="C1D8EE" x="544" y="48" />
+		<entity schema="TSA-weather-dw-lgl-v1.instance" name="tsa-weather-facts" color="C1D8EE" x="272" y="48" />
+		<script name="DW code.sql" id="Editor-1be1" language="SQL" file="file:/C:/Users/ksalm/OneDrive%20-%20Prais+Barnette/Desktop/CIS%209440%20Data%20Warehousing%20for%20Analytics/Project/DW%20code.sql" />
+	</layout>
+</project>
