@@ -58,3 +58,80 @@ for blob in blob_list:
     df = read_blob_as_dataframe(blob.name)
     print(df.shape)
     airquality_data = df.copy()
+
+#droping empty columns 
+df= df.drop(columns = "Message")
+
+#reformating the date YYYY-MM-DD
+df['Start_Date'] = pd.to_datetime(df['Start_Date'], format='%m/%d/%Y')
+df_sorted = df.sort_values(by='Start_Date', ascending=True)
+df = df_sorted
+
+#Creating Date Dimension
+start_date = df['Start_Date'].min()
+end_date = df['Start_Date'].max()
+
+#Creating Week of Month Function
+def week_of_month(dt):
+    year = dt.year
+    month = dt.month
+    day = dt.day
+
+    cal = calendar.monthcalendar(year, month)
+    week_number = (day - 1) // 7 + 1
+    return week_number
+
+# Define start and end dates and DF for date dimension
+start_date = pd.to_datetime('2005-01-01')
+end_date = pd.to_datetime('2022-06-01')
+date_dimension = pd.DataFrame({'date': pd.date_range(start_date, end_date, freq='H')})
+
+# Extract attributes
+date_dimension['Year_number'] = date_dimension['date'].dt.year
+date_dimension['Quarter_number'] = date_dimension['date'].dt.quarter
+date_dimension['Month_number'] = date_dimension['date'].dt.month
+date_dimension['MonthName'] = date_dimension['date'].dt.strftime('%B')
+date_dimension['Day_number'] = date_dimension['date'].dt.day
+date_dimension['DayName'] = date_dimension['date'].dt.strftime('%A')
+date_dimension['Hour_number'] = date_dimension['date'].dt.hour
+date_dimension['Dateisoformat'] = date_dimension['date'].apply(lambda x: x.isoformat())
+date_dimension['DateOriginalFormat'] = date_dimension['date'].dt.date  # Extract date part only
+date_dimension['Date_ID'] = date_dimension['date'].dt.strftime('%Y%m%d%H')
+
+# Add week of the month and week of the year
+date_dimension['WeekoftheMonth'] = date_dimension['date'].apply(week_of_month)
+date_dimension['WeekofTheYear'] = date_dimension['date'].dt.strftime('%U')
+
+# Reorder the columns
+new_order = ['Date_ID', 'DateOriginalFormat', 'Dateisoformat', 'Year_number', 'Quarter_number', 'Month_number', 'Day_number', 'Hour_number', 'MonthName', 'DayName', 'WeekofTheYear', 'WeekoftheMonth']
+date_dimension = date_dimension[new_order]
+
+#Creating the location Dimension and uploading lookup table 
+selected_join = df[["Geo Join ID","Geo Place Name"]]
+look_up = pd.read_csv("lookup_table.csv")
+
+unique_place = [p for p in set(look_up["Geo Place Name"])]
+coordinates_data = pd.read_csv("coordinates_data.csv")
+coordinates_data[coordinates_data["Geo Place Name"] == "Southeast Queens"]
+
+#merging the table 
+merged_table = pd.merge(selected_join, new_look_up, on='Geo Place Name', how='right')
+merged_table = merged_table.drop_duplicates()
+geography = merged_table.drop(columns=["LookupID"])
+geography = geography.drop_duplicates()
+geography = geography.dropna()
+
+#creating the indicator dimension 
+indicator = df[["Indicator ID","Unique ID","Measure","Measure Info"]]
+indicator = indicator.rename(columns={"Indicator ID": "indicator_id", "Unique ID":"unique_ID","Measure": "measure", "Measure Info": "measure_info"})
+
+#creating the fact dimension
+selected_columns = date_dimension[["Date_ID", "DateOriginalFormat"]]
+facts_airquality = df[["Unique ID", "Indicator ID", "Data Value", "Geo Join ID", "Start_Date"]]
+selected_columns['DateOriginalFormat'] = pd.to_datetime(selected_columns['DateOriginalFormat'])
+join_table = pd.merge(facts_airquality, selected_columns, left_on="Start_Date", right_on="DateOriginalFormat", how="inner")
+join_table = join_table.drop_duplicates(subset=['Unique ID', 'Indicator ID', 'Data Value', 'Geo Join ID'])
+facts_airquality = join_table
+facts_airquality = facts_airquality.drop(columns=["DateOriginalFormat", "Start_Date"])
+
+
