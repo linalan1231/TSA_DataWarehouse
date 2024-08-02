@@ -134,4 +134,15 @@ join_table = join_table.drop_duplicates(subset=['Unique ID', 'Indicator ID', 'Da
 facts_airquality = join_table
 facts_airquality = facts_airquality.drop(columns=["DateOriginalFormat", "Start_Date"])
 
+#loading data into Postgres Databse
+pwd = 'Cis9440!'
+database_url = f'postgresql://linalan1231:{pwd}@airquality.postgres.database.azure.com/postgres'
+
+# Create a SQLAlchemy engine
+engine = create_engine(database_url)
+
+geography.to_sql('geography', con=engine, if_exists='append', index=False)
+indicator.to_sql('indicator', con=engine, if_exists='append', index=False)
+date_dimension.to_sql('time', con=engine, if_exists='append', index=False)
+facts_airquality.to_sql('facts_airquality', con=engine, if_exists='append', index=False)
 
