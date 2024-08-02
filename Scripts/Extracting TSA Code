@@ -1,0 +1,58 @@
+import pandas as pd
+
+base_directory = "/Users/trang/Baruch Spring 2024/CIS9440 Data Warehousing and Analytics/"  #change it to own path
+
+week_ranges = [
+    "Jun25-Jul1", "Jul2-Jul8", "Jul9-Jul15", "Jul16-Jul22", "Jul23-Jul29", "Jul30-Aug5",
+    "Aug6-Aug12", "Aug13-Aug19", "Aug20-Aug26", "Aug27-Sep2", "Sep3-Sep9", "Sep10-Sep16",
+    "Sep17-Sep23", "Sep24-Sep30", "Oct1-Oct7", "Oct8-Oct14", "Oct15-Oct21", "Oct22-Oct28",
+    "Oct29-Nov4", "Nov5-Nov11", "Nov12-Nov18", "Nov19-Nov25", "Nov26-Dec2", "Dec3-Dec9",
+    "Dec10-Dec16", "Dec17-Dec23", "Dec24-Dec30", "Dec31-Jan6"
+]   #csv files from TSA data 
+
+file_paths = [base_directory + f"{week}.csv" for week in week_ranges]
+
+dfs = []
+
+column_names = ["Date", "Time", "IATA", "Airport", "City", "State", "Checkpoint", "Total_pax_kcm_pax"]
+
+for file_path in file_paths:
+    df = pd.read_csv(file_path, header=None, names=column_names, skiprows=2)
+    
+    # Filter out rows where total_pax_kcm_pax is not equal to 0
+    df = df[df['Total_pax_kcm_pax'] != 0]
+    
+    df['Total_pax_kcm_pax'] = pd.to_numeric(df['Total_pax_kcm_pax'], errors='coerce')
+    
+    df = df.dropna(subset=['Total_pax_kcm_pax'])
+    
+    # Convert Total_pax_kcm_pax to integers
+    df['Total_pax_kcm_pax'] = df['Total_pax_kcm_pax'].astype(int)
+    
+    df = df[df['Date'] != 'Date']
+    df = df[df['Time'] != 'Time']
+    
+    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y')
+    df['Time'] = pd.to_datetime(df['Time'], format='%H:%M')
+
+    df['Time'] = df['Time'].dt.strftime('%-H:%M')
+    
+    dfs.append(df)
+
+final_df = pd.concat(dfs, ignore_index=True)
+
+final_df['Date'] = final_df['Date'].ffill()
+final_df['Time'] = final_df['Time'].ffill()
+final_df['IATA'] = final_df['IATA'].ffill()
+final_df['Airport'] = final_df['Airport'].ffill()
+final_df['City'] = final_df['City'].ffill()
+final_df['State'] = final_df['State'].ffill()
+final_df['Checkpoint'] = final_df['Checkpoint'].ffill()
+
+final_df = final_df[final_df['Total_pax_kcm_pax'] != 0]
+
+final_df = final_df[(final_df['Date'] >= '2023-07-01') & (final_df['Date'] <= '2023-12-31')]
+
+output_file_path = "/Users/trang/Baruch Spring 2024/CIS9440 Data Warehousing and Analytics/tsa_data.csv" #change it to own path
+
+final_df.to_csv(output_file_path, index=False)
